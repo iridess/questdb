@@ -1681,9 +1681,7 @@ public class SqlCompilerTest extends AbstractGriffinTest {
     public void testCompileStatementsBatch() throws Exception {
         String query = "SELECT pg_advisory_unlock_all(); CLOSE ALL;";
 
-        assertMemoryLeak(()-> {
-            compiler.compileBatch(query, sqlExecutionContext, null);
-        });
+        assertMemoryLeak(() -> compiler.compileBatch(query, sqlExecutionContext, null));
     }
 
     @Test
@@ -2617,6 +2615,39 @@ public class SqlCompilerTest extends AbstractGriffinTest {
             assertSql("select * from x where \"#0101a\" = '#1234'", "#0101a\n" +
                     "#1234\n" +
                     "#1234\n");
+        });
+    }
+
+    @Test
+    public void testRebuildIndex() throws Exception {
+        assertMemoryLeak(() -> {
+            compiler.compile("create table rebuild_index as (select rnd_symbol('1', '2', '33', '44') sym, x from long_sequence(15)), index(sym)", sqlExecutionContext);
+            engine.releaseAllReaders();
+            engine.releaseAllWriters();
+            compile("repair table rebuild_index reindex column sym");
+            assertSql("select * from rebuild_index where sym = '1'", "sym\tx\n" +
+                    "1\t1\n" +
+                    "1\t10\n" +
+                    "1\t11\n" +
+                    "1\t12\n");
+        });
+    }
+
+    @Test
+    public void testRebuildIndexInPartition() throws Exception {
+        assertMemoryLeak(() -> {
+            compiler.compile("create table rebuild_index as (" +
+                    "select rnd_symbol('1', '2', '33', '44') sym, x, timestamp_sequence(0, 12*60*60*1000000L" +
+                    "from long_sequence(15)" +
+                    ") timestamp(ts), index(sym)", sqlExecutionContext);
+            engine.releaseAllReaders();
+            engine.releaseAllWriters();
+            compile("repair table rebuild_index reindex column sym partition '1970-01-02'");
+            assertSql("select * from rebuild_index where sym = '1'", "sym\tx\n" +
+                    "1\t1\n" +
+                    "1\t10\n" +
+                    "1\t11\n" +
+                    "1\t12\n");
         });
     }
 

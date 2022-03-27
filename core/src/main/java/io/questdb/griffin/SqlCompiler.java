@@ -99,6 +99,7 @@ public class SqlCompiler implements Closeable {
     private final TextLoader textLoader;
     private final FilesFacade ff;
     private final TimestampValueRecord partitionFunctionRec = new TimestampValueRecord();
+    private final RebuildIndex rebuildIndex = new RebuildIndex();
 
     //determines how compiler parses query text
     //true - compiler treats whole input as single query and doesn't stop on ';'. Default mode.
@@ -2527,7 +2528,9 @@ public class SqlCompiler implements Closeable {
             throw SqlException.$(lexer.lastTokenPosition(), "'table' expected");
         }
 
+        int count = 0;
         do {
+            count++;
             tok = SqlUtil.fetchNext(lexer);
 
             if (tok == null || Chars.equals(tok, ',')) {
@@ -2538,9 +2541,42 @@ public class SqlCompiler implements Closeable {
                 tok = GenericLexer.unquote(tok);
             }
             tableExistsOrFail(lexer.lastTokenPosition(), tok, executionContext);
-            tok = SqlUtil.fetchNext(lexer);
 
+            if (count == 1) {
+                rebuildIndex.of(tok, engine.getConfiguration());
+            }
+            tok = SqlUtil.fetchNext(lexer);
+            if (SqlKeywords.isReindexKeyword(tok) && count == 1) {
+                tok = SqlUtil.fetchNext(lexer);
+                CharSequence columnName = null;
+
+                if (SqlKeywords.isColumnKeyword(tok)) {
+                    tok = SqlUtil.fetchNext(lexer);
+                    if (Chars.isQuoted(tok)) {
+                        tok = GenericLexer.unquote(tok);
+                    }
+                    if (tok == null || TableUtils.isValidColumnName(tok)) {
+                        columnName = GenericLexer.immutableOf(tok);
+                        tok = SqlUtil.fetchNext(lexer);
+//                        if (tok != null && !Chars.equals(tok, ';')) {
+//                            throw SqlException.$(lexer.lastTokenPosition(), "EOF expected");
+//                        }
+
+                    }
+                }
+                CharSequence partition = null;
+                if (SqlKeywords.isPartitionKeyword(tok)) {
+
+                }
+                rebuildIndex.rebuildPartitionColumn(partition, columnName);
+                return compiledQuery.ofRepair();
+            }
         } while (tok != null && Chars.equals(tok, ','));
+
+        if (tok != null && !Chars.equals(tok, ';')) {
+            throw SqlException.$(lexer.lastTokenPosition(), "EOF expected");
+        }
+
         return compiledQuery.ofRepair();
     }
 

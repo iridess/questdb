@@ -524,7 +524,7 @@ public class RebuildIndexTest extends AbstractCairoTest {
             changeTable.run(tablePath);
 
             rebuildIndex.clear();
-            rebuildIndex.of(tablePath, configuration);
+            rebuildIndex.of("xxx", configuration);
             rebuildIndexAction.run(rebuildIndex);
 
             int sym1A2 = countByFullScan("select * from xxx where sym1 = 'A'");

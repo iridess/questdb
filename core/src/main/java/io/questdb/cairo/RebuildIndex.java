@@ -60,9 +60,9 @@ public class RebuildIndex implements Closeable, Mutable {
     private final SymbolColumnIndexer indexer = new SymbolColumnIndexer();
     private final StringSink tempStringSink = new StringSink();
 
-    public RebuildIndex of(CharSequence tablePath, CairoConfiguration configuration) {
-        this.path.concat(tablePath);
-        this.rootLen = tablePath.length();
+    public RebuildIndex of(CharSequence tableName, CairoConfiguration configuration) {
+        this.path.of(configuration.getRoot()).concat(tableName);
+        this.rootLen = this.path.length();
         this.configuration = configuration;
         return this;
     }
