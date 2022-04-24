@@ -366,6 +366,8 @@ public class PropServerConfiguration implements ServerConfiguration {
     private boolean stringToCharCastAllowed;
     private boolean symbolAsFieldSupported;
     private boolean isStringAsTagSupported;
+    private short floatDefaultColumnType;
+    private short integerDefaultColumnType;
 
     public PropServerConfiguration(
             String root,
@@ -851,6 +853,19 @@ public class PropServerConfiguration implements ServerConfiguration {
                 this.stringToCharCastAllowed = getBoolean(properties, env, "line.tcp.undocumented.string.to.char.cast.allowed", false);
                 this.symbolAsFieldSupported = getBoolean(properties, env, "line.tcp.undocumented.symbol.as.field.supported", false);
                 this.isStringAsTagSupported = getBoolean(properties, env, "line.tcp.undocumented.string.as.tag.supported", false);
+            }
+
+            String floatDefaultColumnTypeName = getString(properties, env, "line.float.default.column.type", ColumnType.nameOf(ColumnType.DOUBLE));
+            this.floatDefaultColumnType = ColumnType.tagOf(floatDefaultColumnTypeName);
+            if (floatDefaultColumnType != ColumnType.DOUBLE && floatDefaultColumnType != ColumnType.FLOAT) {
+                log.info().$("invalid default column type for float ").$(floatDefaultColumnTypeName).$("), will use DOUBLE").$();
+                this.floatDefaultColumnType = ColumnType.DOUBLE;
+            }
+            String integerDefaultColumnTypeName = getString(properties, env, "line.integer.default.column.type", ColumnType.nameOf(ColumnType.LONG));
+            this.integerDefaultColumnType = ColumnType.tagOf(integerDefaultColumnTypeName);
+            if (integerDefaultColumnType != ColumnType.LONG && integerDefaultColumnType != ColumnType.INT && integerDefaultColumnType != ColumnType.SHORT && integerDefaultColumnType != ColumnType.BYTE) {
+                log.info().$("invalid default column type for integer ").$(integerDefaultColumnTypeName).$("), will use LONG").$();
+                this.integerDefaultColumnType = ColumnType.LONG;
             }
 
             this.sharedWorkerCount = getInt(properties, env, "shared.worker.count", Math.max(1, cpuAvailable / 2 - 1 - cpuUsed));
@@ -2272,6 +2287,16 @@ public class PropServerConfiguration implements ServerConfiguration {
         public int getDefaultPartitionBy() {
             return lineUdpDefaultPartitionBy;
         }
+
+        @Override
+        public short getDefaultColumnTypeForFloat() {
+            return floatDefaultColumnType;
+        }
+
+        @Override
+        public short getDefaultColumnTypeForInteger() {
+            return integerDefaultColumnType;
+        }
     }
 
     private class PropLineTcpReceiverIODispatcherConfiguration implements IODispatcherConfiguration {
@@ -2540,6 +2565,16 @@ public class PropServerConfiguration implements ServerConfiguration {
         @Override
         public boolean isStringAsTagSupported() {
             return isStringAsTagSupported;
+        }
+
+        @Override
+        public short getDefaultColumnTypeForFloat() {
+            return floatDefaultColumnType;
+        }
+
+        @Override
+        public short getDefaultColumnTypeForInteger() {
+            return integerDefaultColumnType;
         }
     }
 

@@ -25,6 +25,7 @@
 package io.questdb.cutlass.line.tcp;
 
 import io.questdb.cairo.AbstractCairoTest;
+import io.questdb.cairo.ColumnType;
 import io.questdb.cairo.TableReader;
 import io.questdb.log.Log;
 import io.questdb.log.LogFactory;
@@ -94,6 +95,8 @@ abstract class BaseLineTcpContextTest extends AbstractCairoTest {
     protected boolean disconnectOnError;
     protected boolean stringToCharCastAllowed;
     protected boolean symbolAsFieldSupported;
+    protected short floatDefaultColumnType;
+    protected short integerDefaultColumnType;
 
     @Before
     public void before() {
@@ -103,6 +106,8 @@ abstract class BaseLineTcpContextTest extends AbstractCairoTest {
         disconnected = true;
         netMsgBufferSize.set(512);
         disconnectOnError = false;
+        floatDefaultColumnType = ColumnType.DOUBLE;
+        integerDefaultColumnType = ColumnType.LONG;
         lineTcpConfiguration = createNoAuthReceiverConfiguration(provideLineTcpNetworkFacade());
     }
 
@@ -190,6 +195,16 @@ abstract class BaseLineTcpContextTest extends AbstractCairoTest {
             @Override
             public boolean isSymbolAsFieldSupported() {
                 return symbolAsFieldSupported;
+            }
+
+            @Override
+            public short getDefaultColumnTypeForFloat() {
+                return floatDefaultColumnType;
+            }
+
+            @Override
+            public short getDefaultColumnTypeForInteger() {
+                return integerDefaultColumnType;
             }
 
             @Override

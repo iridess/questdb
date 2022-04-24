@@ -46,6 +46,7 @@ class LineTcpMeasurementEvent implements Closeable {
     private final MicrosecondClock clock;
     private final LineProtoTimestampAdapter timestampAdapter;
     private final LineTcpEventBuffer buffer;
+    private final DefaultColumnTypes defaultColumnTypes;
     private final boolean stringToCharCastAllowed;
     private final boolean symbolAsFieldSupported;
     private int writerWorkerId;
@@ -57,12 +58,14 @@ class LineTcpMeasurementEvent implements Closeable {
             long bufSize,
             MicrosecondClock clock,
             LineProtoTimestampAdapter timestampAdapter,
+            DefaultColumnTypes defaultColumnTypes,
             boolean stringToCharCastAllowed,
             boolean symbolAsFieldSupported
     ) {
         this.buffer = new LineTcpEventBuffer(bufLo, bufSize);
         this.clock = clock;
         this.timestampAdapter = timestampAdapter;
+        this.defaultColumnTypes = defaultColumnTypes;
         this.stringToCharCastAllowed = stringToCharCastAllowed;
         this.symbolAsFieldSupported = symbolAsFieldSupported;
     }
@@ -123,7 +126,7 @@ class LineTcpMeasurementEvent implements Closeable {
                         // column is added
                         row.cancel();
                         row = null;
-                        final int colType = DefaultColumnTypes.DEFAULT_COLUMN_TYPES[entityType];
+                        final int colType = defaultColumnTypes.MAPPED_COLUMN_TYPES[entityType];
                         writer.addColumn(columnName, colType);
 
                         // Seek to beginning of entities
@@ -272,7 +275,7 @@ class LineTcpMeasurementEvent implements Closeable {
                 CharSequence colName = localDetails.getColName();
                 if (TableUtils.isValidColumnName(colName)) {
                     offset = buffer.addColumnName(offset, colName);
-                    colType = DefaultColumnTypes.DEFAULT_COLUMN_TYPES[entityType];
+                    colType = defaultColumnTypes.DEFAULT_COLUMN_TYPES[entityType];
                 } else {
                     throw invalidColNameError(colName);
                 }
